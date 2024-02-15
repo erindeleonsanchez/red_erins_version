@@ -1,0 +1,151 @@
+---
+title: "Egg Morphs"
+author: "Erin de Leon Sanchez"
+date: "2/15/2024"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load packages
+library(tidyverse)
+library(ggplot2)
+library(here)
+library(ggpubr)
+library(rstatix)
+library(lme4)
+library(lmerTest)
+library(ggfortify)
+library(Hmisc)
+library(sjPlot)
+```
+
+```{r}
+# Read in the data
+eggs <- read_csv("egg_morph_measurements.csv") %>% 
+  group_by(mom_id) %>% 
+  mutate(mean_diameter_mm=(diameter_a_mm+diameter_d_mm)/2)
+
+# Setting variables as factors 
+eggs$mom_id<-as.factor(eggs$mom_id)
+eggs$treatment<-as.factor(eggs$treatment)
+
+# Ordering treatments
+eggs$treatment<-factor(eggs$treatment, levels=c("H", "C"))
+eggs$mom_id<-factor(eggs$mom_id, levels=c("C1", "C2", "C3", "H1", "H2", "H3"))
+```
+
+Morph Analysis
+```{r}
+# Check the relationship between diameter and area
+# Note that we took two measurements for diameter - not sure if I average then analyze or just analyze with one diameter
+
+plot(eggs$mean_diameter_mm ~ eggs$area_mm2)
+
+
+model<-lm(area_mm2~mean_diameter_mm, data=eggs)
+summary(model)
+
+plot(eggs$mean_diameter_mm, eggs$area_mm2)
+abline(model)
+
+# Vizualization of Diameter
+
+plot_egg_diameter<-ggplot(eggs, aes(x=treatment, y=mean_diameter_mm, fill=treatment))+
+  geom_boxplot()+
+  scale_fill_manual(values=c("brown3","deepskyblue3"))+
+  labs(x="Treatment", y="Diameter (mm)")+
+  theme_linedraw()+
+  theme(legend.position = "none")
+  plot_egg_diameter
+  ggsave("egg_diameter.png", width = 8, height = 5)  
+    
+```
+
+### Egg diameter stats
+
+```{r}
+# Examining Diameter
+lmer_eggs_diameter<-lmer(data=eggs, mean_diameter_mm ~ (1|mom_id), REML=FALSE)
+lmer_eggs2_diameter<-lmer(data=eggs, mean_diameter_mm ~ treatment + (1|mom_id), REML=FALSE)
+
+anova(lmer_eggs_diameter, lmer_eggs2_diameter)
+anova(lmer_eggs2_diameter)
+
+
+print(lmer_eggs2_diameter)
+
+
+summary(lmer_eggs2_diameter)
+
+# Checking Residuals 
+plot(lmer_eggs2_diameter)
+qqnorm(resid(lmer_eggs2_diameter))
+hist(residuals(lmer_eggs2_diameter))
+# all plots look pretty good
+
+```
+
+
+### Egg area stats
+```{r}
+# Visualization
+plot_egg_area<-ggplot(eggs, aes(x=treatment, y=area_mm2, fill=treatment))+
+  geom_boxplot()+
+  scale_fill_manual(values=c("brown3","deepskyblue3"))+
+  labs(x="Treatment", y="Area (mm^2)")+
+  theme_linedraw()+
+  theme(legend.position = "none")
+  ggsave("egg_area.png", width = 8, height = 5)  
+
+plot_egg_area
+
+    
+lmer_eggs_area<-lmer(data=eggs, area_mm2 ~ (1|mom_id), REML=FALSE)
+lmer_eggs2_area<-lmer(data=eggs, area_mm2 ~ treatment + (1|mom_id), REML=FALSE)
+
+  
+anova(lmer_eggs_area, lmer_eggs2_area)
+anova(lmer_eggs2_area)
+
+summary(lmer_eggs2_area)
+
+# Checking Residuals
+plot(lmer_eggs2_area)
+qqnorm(resid(lmer_eggs2_area))
+hist(residuals(lmer_eggs2_area))
+    
+
+```
+
+
+Summary Stats
+```{r}
+eggs_diameter_summary_stats <- eggs %>% 
+    group_by(treatment) %>% 
+    get_summary_stats(mean_diameter_mm, type = "common")
+
+eggs_area_summary_stats <- eggs %>% 
+    group_by(treatment) %>% 
+    get_summary_stats(area_mm2, type = "common")
+
+# Stats
+
+eggs_sum<-eggs %>% 
+  select(treatment, avg_diameter_mm, area_mm2) 
+
+# Variance of all eggs
+
+# Area    
+lmer_eggs_var_area<-lm(data=eggs, area_mm2 ~ treatment)
+summary(lmer_eggs_var)
+  # Diameter
+
+lmer_eggs_var_diameter<-lm(data=eggs, avg_diameter_mm ~ treatment)
+summary(lmer_eggs_var)
+```
+
+
+```
