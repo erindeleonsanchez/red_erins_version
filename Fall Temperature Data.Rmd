@@ -1,0 +1,158 @@
+---
+title: "Fall Temps"
+author: "Sophia Rose Cabral :D "
+output: html_document
+date: "2024-04-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r reading data }
+mhw_temps <- read_csv(here("MHW Fall Data.csv")) 
+
+nonmhw_temps <- read_csv(here("Control Fall Data.csv")) 
+ 
+```
+
+```{r fixing date/time}
+# Converting datetime to posixct format
+mhw_temps$date_time<-as.POSIXct(mhw_temps$date_time, format="%m/%d/%Y %H:%M:%S", tz="America/Los_Angeles")
+nonmhw_temps$date_time<-as.POSIXct(nonmhw_temps$date_time, format="%m/%d/%Y %H:%M:%S", tz="America/Los_Angeles")
+
+
+# ggplot!
+
+ggplot(mhw_temps, aes(x=date_time, y=Temperature))+
+  geom_point(size=0.25, color="red")+
+  geom_line(color="red")+
+  theme_bw()
+
+ggplot(nonmhw_temps, aes(x=date_time, y=Temperature))+
+  geom_point(size=0.25, color="deepskyblue4")+
+  geom_line(color="deepskyblue4")+
+  theme_bw()
+```
+```{r}
+# Making a date column for each logger
+mhw_temps$date<-substr(mhw_temps$date_time, 1, 10)
+mhw_temps$date<-as.Date(mhw_temps$date)
+
+nonmhw_temps$date<-substr(nonmhw_temps$date_time, 1, 10)
+nonmhw_temps$date<-as.Date(nonmhw_temps$date)
+
+# Making a time column for each logger
+mhw_temps$time<-substr(mhw_temps$date_time, 12,16)
+nonmhw_temps$time<-substr(nonmhw_temps$date_time, 12,16)
+
+# Making an hour column for each logger
+mhw_temps$hour<-substr(mhw_temps$date_time, 12,13)
+mhw_temps$hour<-as.factor(mhw_temps$hour)
+
+nonmhw_temps$hour<-substr(nonmhw_temps$date_time, 12,13)
+nonmhw_temps$hour<-as.factor(nonmhw_temps$hour)
+
+# Getting the mean based on day and hour
+hourly_average_mhw<-mhw_temps %>% 
+  group_by(date, hour) %>% 
+  summarise(avg_temp=mean(Temperature))
+
+hourly_average_nonmhw<-nonmhw_temps %>% 
+  group_by(date, hour) %>% 
+  summarise(avg_temp=mean(Temperature))
+
+# Making a new 'time' column with just the hour
+
+# THIS CODE IS THE BIT I CHANGED
+# For hourly_average_mhw data frame
+hourly_average_mhw$min <- rep("00", nrow(hourly_average_mhw))
+
+# For hourly_average_nonmhw data frame
+hourly_average_nonmhw$min <- rep("00", nrow(hourly_average_nonmhw))
+# 2117 is the number of rows in the dataset
+
+# Then combine the 'hour' and 'min' column
+hourly_average_mhw$time<-paste(hourly_average_mhw$hour, hourly_average_mhw$min, sep=":")
+hourly_average_nonmhw$time<-paste(hourly_average_nonmhw$hour, hourly_average_nonmhw$min, sep=":")
+
+# Making a 'datetime' column
+hourly_average_mhw$datetime<-paste(hourly_average_mhw$date, hourly_average_mhw$time, sep=" ")
+hourly_average_nonmhw$datetime<-paste(hourly_average_nonmhw$date, hourly_average_nonmhw$time, sep=" ")
+
+# Converting it to posixct
+hourly_average_mhw$datetime<-as.POSIXct(hourly_average_mhw$datetime, format="%Y-%m-%d %H:%M", tz="America/Los_Angeles")
+
+hourly_average_nonmhw$datetime<-as.POSIXct(hourly_average_nonmhw$datetime, format="%Y-%m-%d %H:%M", tz="America/Los_Angeles")
+
+# Quick Plot
+plot(hourly_average_mhw$datetime, hourly_average_mhw$avg_temp)
+plot(hourly_average_nonmhw$datetime, hourly_average_nonmhw$avg_temp)
+
+# GGPlot
+ggplot(hourly_average_mhw, aes(x=datetime, y=avg_temp))+
+  geom_point(size=0.25, color="red")+
+  geom_line(color="red")+
+  theme_bw()
+```
+
+# Plot daily averages
+```{r}
+# Getting daily averages
+daily_average_mhw<-mhw_temps %>% 
+  group_by(date) %>% 
+  summarise(avg_temp=mean(Temperature))
+
+daily_average_mhw <- daily_average_mhw[1:(nrow(daily_average_mhw) - 4), ] 
+
+daily_average_nonmhw<-nonmhw_temps %>% 
+  group_by(date) %>% 
+  summarise(avg_temp=mean(Temperature))
+
+plot(daily_average_mhw$date, daily_average_mhw$avg_temp)
+plot(daily_average_nonmhw$date, daily_average_nonmhw$avg_temp)
+
+mhw_logger_figure <- ggplot(daily_average_mhw, aes(x=date, y=avg_temp))+
+  geom_point(size=0.25, color="red")+
+  geom_line(color="red")+
+  labs(x = "Month",
+       y = "Temperature (°C)") +
+  theme_bw()
+
+mhw_logger_figure 
+
+ggsave("mhw_logger_figure.png", width = 5, height = 5)
+
+control_logger_figure <- ggplot(daily_average_nonmhw, aes(x=date, y=avg_temp))+
+  geom_point(size=0.25, color="lightblue")+
+  geom_line(color="blue")+
+   labs(x = "Month",
+       y = "Temperature (°C)")+
+  theme_bw()
+
+control_logger_figure
+
+ggsave("control_logger_figure.png", width = 5, height = 5)
+
+combined_fig <- ggplot() +
+  geom_line(data = daily_average_mhw, aes(x = date, y = avg_temp), color = "red") +
+  geom_line(data = daily_average_nonmhw, aes(x = date, y = avg_temp), color = "blue") +
+  labs(x = "Month", y = "Temperature (°C)") +
+  scale_y_continuous(limits = c(12, 23)) +  # Set y-axis limits to 12 and 20
+  xlim(as.Date("2023-10-4"), as.Date("2023-11-29")) +  # Set x-axis limits
+  theme_bw() +
+  ggtitle("System Temperatures") +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 20)))
+
+print(combined_fig)
+
+ggsave("combined_fig.png", width = 5, height = 5)  
+
+```
+
