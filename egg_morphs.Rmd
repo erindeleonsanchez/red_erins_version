@@ -24,7 +24,7 @@ library(sjPlot)
 
 ```{r}
 # Read in the data
-eggs <- read_csv("egg_morph_measurements.csv") %>% 
+eggs <- read_csv("egg_morphs_measurements.csv") %>% 
   group_by(mom_id) %>% 
   mutate(mean_diameter_mm=(diameter_a_mm+diameter_d_mm)/2)
 
@@ -72,13 +72,67 @@ lmer_eggs_diameter<-lmer(data=eggs, mean_diameter_mm ~ (1|mom_id), REML=FALSE)
 lmer_eggs2_diameter<-lmer(data=eggs, mean_diameter_mm ~ treatment + (1|mom_id), REML=FALSE)
 
 anova(lmer_eggs_diameter, lmer_eggs2_diameter)
-anova(lmer_eggs2_diameter)
+## I am doing this test to determine which model fits the data best and we see here that it is lmer_eggs2_diameter, where we model area with treatment as a fixed effect (variable) and mom identity as a random effect.
+# Data: eggs
+# Models:
+# lmer_eggs_diameter: mean_diameter_mm ~ (1 | mom_id)
+# lmer_eggs2_diameter: mean_diameter_mm ~ treatment + (1 | mom_id)
+#                     npar     AIC     BIC logLik deviance  Chisq Df Pr(>Chisq)   
+# lmer_eggs_diameter     3 -1442.5 -1432.9 724.27  -1448.5                        
+# lmer_eggs2_diameter    4 -1449.2 -1436.5 728.63  -1457.2 8.7144  1   0.003157 **
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
+anova(lmer_eggs2_diameter) # this is the model we care about, it includes treatment
+# Type III Analysis of Variance Table with Satterthwaite's method
+#               Sum Sq    Mean Sq NumDF  DenDF F value   Pr(>F)   
+# treatment 0.00035383 0.00035383     1 6.0051  19.667 0.004392 **
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+## Here, we see that there IS a significant difference between egg diameter from mothers exposed to MHW conditions vs. mothers exposed to non-MHW. We can report this as (ANOVA, F(1,6) = 19.667, p < 0.05) below our beautiful figure!
 
 print(lmer_eggs2_diameter)
-
+# Linear mixed model fit by maximum likelihood  ['lmerMod']
+# Formula: mean_diameter_mm ~ treatment + (1 | mom_id)
+#    Data: eggs
+#       AIC       BIC    logLik  deviance  df.resid 
+# -1449.254 -1436.460   728.627 -1457.254       177 
+# Random effects:
+#  Groups   Name        Std.Dev.
+#  mom_id   (Intercept) 0.001098
+#  Residual             0.004242
+# Number of obs: 181, groups:  mom_id, 6
+# Fixed Effects:
+# (Intercept)   treatmentC  
+#     0.11146      0.00486  
 
 summary(lmer_eggs2_diameter)
+# Linear mixed model fit by maximum likelihood  ['lmerMod']
+# Formula: mean_diameter_mm ~ treatment + (1 | mom_id)
+#    Data: eggs
+# 
+#      AIC      BIC   logLik deviance df.resid 
+#  -1449.3  -1436.5    728.6  -1457.3      177 
+# 
+# Scaled residuals: 
+#     Min      1Q  Median      3Q     Max 
+# -8.6384 -0.5024  0.0306  0.5171  1.8918 
+# 
+# Random effects:
+#  Groups   Name        Variance  Std.Dev.
+#  mom_id   (Intercept) 1.205e-06 0.001098
+#  Residual             1.799e-05 0.004242
+# Number of obs: 181, groups:  mom_id, 6
+# 
+# Fixed effects:
+#              Estimate Std. Error t value
+# (Intercept) 0.1114609  0.0007756 143.711
+# treatmentC  0.0048599  0.0010959   4.435
+# 
+# Correlation of Fixed Effects:
+#            (Intr)
+# treatmentC -0.708
 
 # Checking Residuals 
 plot(lmer_eggs2_diameter)
@@ -108,9 +162,57 @@ lmer_eggs2_area<-lmer(data=eggs, area_mm2 ~ treatment + (1|mom_id), REML=FALSE)
 
   
 anova(lmer_eggs_area, lmer_eggs2_area)
+## I am doing this test to determine which model fits the data best and we see here that it is lmer_eggs2_area, where we model area with treatment as a fixed effect (variable) and mom identity as a random effect.
+
+# Data: eggs
+# Models:
+# lmer_eggs_area: area_mm2 ~ (1 | mom_id)
+# lmer_eggs2_area: area_mm2 ~ treatment + (1 | mom_id)
+#                 npar     AIC     BIC logLik deviance  Chisq Df Pr(>Chisq)   
+# lmer_eggs_area     3 -2106.3 -2096.7 1056.1  -2112.3                        
+# lmer_eggs2_area    4 -2113.2 -2100.4 1060.6  -2121.2 8.9403  1   0.002789 **
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
 anova(lmer_eggs2_area)
+# Type III Analysis of Variance Table with Satterthwaite's method
+#               Sum Sq    Mean Sq NumDF  DenDF F value   Pr(>F)   
+# treatment 9.3966e-06 9.3966e-06     1 6.0096  20.641 0.003904 **
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+## Here, we see that there IS a significant difference between egg area from mothers exposed to MHW conditions vs. mothers exposed to non-MHW. We can report this as (ANOVA, F(1,6) = 20.641 , p < 0.05) below our beautiful figure!
+
 
 summary(lmer_eggs2_area)
+# Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite's method [
+# lmerModLmerTest]
+# Formula: area_mm2 ~ treatment + (1 | mom_id)
+#    Data: eggs
+# 
+#      AIC      BIC   logLik deviance df.resid 
+#  -2113.2  -2100.4   1060.6  -2121.2      177 
+# 
+# Scaled residuals: 
+#     Min      1Q  Median      3Q     Max 
+# -8.5685 -0.5171  0.0383  0.5465  2.1027 
+# 
+# Random effects:
+#  Groups   Name        Variance  Std.Dev. 
+#  mom_id   (Intercept) 4.387e-08 0.0002095
+#  Residual             4.552e-07 0.0006747
+# Number of obs: 181, groups:  mom_id, 6
+# 
+# Fixed effects:
+#              Estimate Std. Error        df t value Pr(>|t|)    
+# (Intercept) 0.0097630  0.0001403 6.0264011  69.591 5.48e-10 ***
+# treatmentC  0.0009008  0.0001983 6.0095751   4.543   0.0039 ** 
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Correlation of Fixed Effects:
+#            (Intr)
+# treatmentC -0.708
 
 # Checking Residuals
 plot(lmer_eggs2_area)
@@ -130,18 +232,20 @@ eggs_diameter_summary_stats <- eggs %>%
 eggs_area_summary_stats <- eggs %>% 
     group_by(treatment) %>% 
     get_summary_stats(area_mm2, type = "common")
+eggs_area_summary_stats
 
 # Stats
 
 eggs_sum<-eggs %>% 
-  select(treatment, avg_diameter_mm, area_mm2) 
+  select(treatment, mean_diameter_mm, area_mm2) 
 
 # Variance of all eggs
 
 # Area    
 lmer_eggs_var_area<-lm(data=eggs, area_mm2 ~ treatment)
-summary(lmer_eggs_var)
-  # Diameter
+summary(lmer_eggs_var_area)
+
+# Diameter
 
 lmer_eggs_var_diameter<-lm(data=eggs, avg_diameter_mm ~ treatment)
 summary(lmer_eggs_var)
